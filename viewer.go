@@ -2,13 +2,10 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -137,20 +134,4 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.progress = t
 
 	return m, nil
-}
-
-func main() {
-	var m model
-	m.frameSet = parseFrames()
-	m.progress = modelProg{progress: progress.New(progress.WithSolidFill("#1c46ad")),
-		maxWidth: 65,
-		padding:  2}
-	m.help = newHelpModel()
-	m.speed = 15
-	p := tea.NewProgram(m)
-	if err := p.Start(); err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
-	}
-
 }
