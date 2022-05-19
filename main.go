@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -25,6 +26,7 @@ type model struct {
 	currentFrame int
 	paused       bool
 	help         helpModel
+	progress     modelProg
 	tooSmall     bool
 }
 
@@ -60,7 +62,7 @@ func parseFrames() []Frame {
 }
 
 func (m model) View() string {
-	return m.frameSet[m.currentFrame].String() + "\n\n" + m.help.View() + "\n"
+	return m.frameSet[m.currentFrame].String() + "\n" + m.progress.View() + m.help.View() + "\n"
 }
 
 func (m model) Init() tea.Cmd {
@@ -86,7 +88,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.paused = true
 		}
 	case tea.WindowSizeMsg:
-
 		if msg.Width < 68 {
 			m.paused = true
 			m.tooSmall = true
@@ -130,12 +131,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.help = t
 		}
 	}
+	m.progress.percent = float64(m.currentFrame) / float64(len(m.frameSet))
+	p, _ := m.progress.Update(msg)
+	t, _ := p.(modelProg)
+	m.progress = t
+
 	return m, nil
 }
 
 func main() {
 	var m model
 	m.frameSet = parseFrames()
+	m.progress = modelProg{progress: progress.New(progress.WithSolidFill("#1c46ad")),
+		maxWidth: 65,
+		padding:  2}
 	m.help = newHelpModel()
 	m.speed = 15
 	p := tea.NewProgram(m)
