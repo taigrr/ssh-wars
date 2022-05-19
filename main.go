@@ -3,17 +3,30 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 //go:embed starwars.ascii
 var asciiString string
 
-var frames []Frame
-
 const viewportY = 13
+
+type TickMsg struct {
+	Time time.Time
+	tag  int
+	ID   int
+}
+
+type model struct {
+	frameSet     []Frame
+	speed        int
+	currentFrame int
+}
 
 type Frame struct {
 	lines      []string
@@ -24,7 +37,8 @@ func (f Frame) String() string {
 	return strings.Join(f.lines, "\n")
 }
 
-func init() {
+func parseFrames() []Frame {
+	var frames []Frame
 	asciiString = strings.ReplaceAll(asciiString, "\\'", "'")
 	asciiString = strings.ReplaceAll(asciiString, "\\\\", "\\")
 	lines := strings.Split(asciiString, "\\n")
@@ -42,11 +56,59 @@ func init() {
 			frames = append(frames, f)
 		}
 	}
+	return frames
+}
+
+func (m model) View() string {
+	return m.frameSet[m.currentFrame].String()
+}
+
+func (m model) Init() tea.Cmd {
+	return m.tick(m.currentFrame, m.currentFrame)
+}
+
+func (m model) tick(id, tag int) tea.Cmd {
+	return tea.Tick(time.Second*time.Duration(m.frameSet[m.currentFrame].frameCount)/15, func(t time.Time) tea.Msg {
+		return TickMsg{
+			Time: t,
+			ID:   id,
+			tag:  tag,
+		}
+	})
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case TickMsg:
+		m.currentFrame++
+		return m, m.tick(m.currentFrame, m.currentFrame)
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "right", "l":
+			if m.currentFrame < len(m.frameSet) {
+				m.currentFrame++
+			}
+		case "down", "j":
+			m.speed--
+		case "left", "h":
+			if m.currentFrame > 0 {
+				m.currentFrame--
+			}
+		case "enter", " ":
+		}
+	}
+	return m, nil
 }
 
 func main() {
-	for _, f := range frames {
-		fmt.Println(f)
-		time.Sleep(time.Second * time.Duration(f.frameCount) / 15)
+	var m model
+	m.frameSet = parseFrames()
+	p := tea.NewProgram(m)
+	if err := p.Start(); err != nil {
+		fmt.Printf("Error: %v", err)
+		os.Exit(1)
 	}
+
 }
