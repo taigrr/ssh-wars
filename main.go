@@ -84,16 +84,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.paused {
 			break
 		}
-		if m.currentFrame < len(m.frameSet) {
+		if m.currentFrame < len(m.frameSet)-1 {
 			m.currentFrame++
+			return m, m.tick(m.currentFrame, m.currentFrame)
+		} else {
+			m.paused = true
 		}
-		return m, m.tick(m.currentFrame, m.currentFrame)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "right", "l":
-			if m.currentFrame < len(m.frameSet) {
+			if m.currentFrame < len(m.frameSet)-1 {
 				m.currentFrame++
 			}
 		case "down", "j":
@@ -102,6 +104,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentFrame > 0 {
 				m.currentFrame--
 			}
+		case "G":
+			m.currentFrame = len(m.frameSet) - 1
+		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+			num, _ := strconv.Atoi(msg.String())
+			m.currentFrame = len(m.frameSet) - 1
+			m.currentFrame = m.currentFrame * num / 10
 		case " ":
 			m.paused = !m.paused
 			return m, m.tick(m.currentFrame, m.currentFrame)
