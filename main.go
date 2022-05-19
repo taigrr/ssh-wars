@@ -17,9 +17,6 @@ var asciiString string
 const viewportY = 13
 
 type TickMsg struct {
-	Time time.Time
-	tag  int
-	ID   int
 }
 
 type model struct {
@@ -65,16 +62,12 @@ func (m model) View() string {
 }
 
 func (m model) Init() tea.Cmd {
-	return m.tick(m.currentFrame, m.currentFrame)
+	return m.tick()
 }
 
-func (m model) tick(id, tag int) tea.Cmd {
+func (m model) tick() tea.Cmd {
 	return tea.Tick(time.Second*time.Duration(m.frameSet[m.currentFrame].frameCount)/time.Duration(m.speed), func(t time.Time) tea.Msg {
-		return TickMsg{
-			Time: t,
-			ID:   id,
-			tag:  tag,
-		}
+		return TickMsg{}
 	})
 }
 
@@ -86,7 +79,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.currentFrame < len(m.frameSet)-1 {
 			m.currentFrame++
-			return m, m.tick(m.currentFrame, m.currentFrame)
+			return m, m.tick()
 		} else {
 			m.paused = true
 		}
@@ -117,7 +110,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentFrame = m.currentFrame * num / 10
 		case " ":
 			m.paused = !m.paused
-			return m, m.tick(m.currentFrame, m.currentFrame)
+			return m, m.tick()
 		}
 	}
 	return m, nil
