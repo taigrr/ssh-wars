@@ -26,6 +26,7 @@ type model struct {
 	frameSet     []Frame
 	speed        int
 	currentFrame int
+	paused       bool
 }
 
 type Frame struct {
@@ -80,7 +81,12 @@ func (m model) tick(id, tag int) tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case TickMsg:
-		m.currentFrame++
+		if m.paused {
+			break
+		}
+		if m.currentFrame < len(m.frameSet) {
+			m.currentFrame++
+		}
 		return m, m.tick(m.currentFrame, m.currentFrame)
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -96,7 +102,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentFrame > 0 {
 				m.currentFrame--
 			}
-		case "enter", " ":
+		case " ":
+			m.paused = !m.paused
+			return m, m.tick(m.currentFrame, m.currentFrame)
 		}
 	}
 	return m, nil
