@@ -69,7 +69,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) tick(id, tag int) tea.Cmd {
-	return tea.Tick(time.Second*time.Duration(m.frameSet[m.currentFrame].frameCount)/15, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Second*time.Duration(m.frameSet[m.currentFrame].frameCount)/time.Duration(m.speed), func(t time.Time) tea.Msg {
 		return TickMsg{
 			Time: t,
 			ID:   id,
@@ -98,8 +98,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.currentFrame < len(m.frameSet)-1 {
 				m.currentFrame++
 			}
+		case "up", "k":
+			m.speed++
+
 		case "down", "j":
-			m.speed--
+			if m.speed > 1 {
+				m.speed--
+			}
 		case "left", "h":
 			if m.currentFrame > 0 {
 				m.currentFrame--
@@ -121,6 +126,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func main() {
 	var m model
 	m.frameSet = parseFrames()
+	m.speed = 15
 	p := tea.NewProgram(m)
 	if err := p.Start(); err != nil {
 		fmt.Printf("Error: %v", err)
