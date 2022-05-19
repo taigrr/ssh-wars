@@ -24,6 +24,8 @@ type model struct {
 	speed        int
 	currentFrame int
 	paused       bool
+	help         helpModel
+	tooSmall     bool
 }
 
 type Frame struct {
@@ -58,7 +60,7 @@ func parseFrames() []Frame {
 }
 
 func (m model) View() string {
-	return m.frameSet[m.currentFrame].String()
+	return m.frameSet[m.currentFrame].String() + "\n\n" + m.help.View() + "\n"
 }
 
 func (m model) Init() tea.Cmd {
@@ -83,6 +85,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.paused = true
 		}
+	case tea.WindowSizeMsg:
+
+		if msg.Width < 68 {
+			m.paused = true
+			m.tooSmall = true
+		} else if m.tooSmall {
+			m.paused = false
+		}
+		h, _ := m.help.Update(msg)
+		t, _ := h.(helpModel)
+		m.help = t
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -111,6 +124,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case " ":
 			m.paused = !m.paused
 			return m, m.tick()
+		default:
+			h, _ := m.help.Update(msg)
+			t, _ := h.(helpModel)
+			m.help = t
 		}
 	}
 	return m, nil
@@ -119,6 +136,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func main() {
 	var m model
 	m.frameSet = parseFrames()
+	m.help = newHelpModel()
 	m.speed = 15
 	p := tea.NewProgram(m)
 	if err := p.Start(); err != nil {
