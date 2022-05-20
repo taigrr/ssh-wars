@@ -19,6 +19,7 @@ import (
 	bm "github.com/charmbracelet/wish/bubbletea"
 	lm "github.com/charmbracelet/wish/logging"
 	"github.com/gliderlabs/ssh"
+	"github.com/taigrr/ssh-wars/asciimation"
 )
 
 var host = flag.String("host", "0.0.0.0", "host to listen on")
@@ -62,13 +63,13 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		fmt.Println("no active terminal, skipping")
 		return nil, nil
 	}
-	var m model
-	m.frameSet = parseFrames()
-	m.progress = modelProg{progress: progress.New(progress.WithSolidFill("#1c46ad")),
-		maxWidth: 65,
-		padding:  2}
-	m.help = newHelpModel()
-	m.speed = 15
+	var m asciimation.Model
+	m.FrameSet = asciimation.ParseFrames()
+	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("#1c46ad")),
+		MaxWidth: 65,
+		Padding:  2}
+	m.Help = asciimation.NewHelpModel()
+	m.Speed = 15
 
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }

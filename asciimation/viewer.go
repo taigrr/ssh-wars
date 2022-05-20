@@ -1,4 +1,4 @@
-package main
+package asciimation
 
 import (
 	_ "embed"
@@ -17,13 +17,13 @@ const viewportY = 13
 type TickMsg struct {
 }
 
-type model struct {
-	frameSet     []Frame
-	speed        int
+type Model struct {
+	Progress     ModelProg
+	Help         HelpModel
+	FrameSet     []Frame
+	Speed        int
 	currentFrame int
 	paused       bool
-	help         helpModel
-	progress     modelProg
 	tooSmall     bool
 }
 
@@ -36,7 +36,7 @@ func (f Frame) String() string {
 	return strings.Join(f.lines, "\n")
 }
 
-func parseFrames() []Frame {
+func ParseFrames() []Frame {
 	var frames []Frame
 	asciiString = strings.ReplaceAll(asciiString, "\\'", "'")
 	asciiString = strings.ReplaceAll(asciiString, "\\\\", "\\")
@@ -58,27 +58,27 @@ func parseFrames() []Frame {
 	return frames
 }
 
-func (m model) View() string {
-	return m.frameSet[m.currentFrame].String() + "\n" + m.progress.View() + m.help.View() + "\n"
+func (m Model) View() string {
+	return m.FrameSet[m.currentFrame].String() + "\n" + m.Progress.View() + m.Help.View() + "\n"
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return m.tick()
 }
 
-func (m model) tick() tea.Cmd {
-	return tea.Tick(time.Second*time.Duration(m.frameSet[m.currentFrame].frameCount)/time.Duration(m.speed), func(t time.Time) tea.Msg {
+func (m Model) tick() tea.Cmd {
+	return tea.Tick(time.Second*time.Duration(m.FrameSet[m.currentFrame].frameCount)/time.Duration(m.Speed), func(t time.Time) tea.Msg {
 		return TickMsg{}
 	})
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case TickMsg:
 		if m.paused {
 			break
 		}
-		if m.currentFrame < len(m.frameSet)-1 {
+		if m.currentFrame < len(m.FrameSet)-1 {
 			m.currentFrame++
 			return m, m.tick()
 		} else {
@@ -91,47 +91,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if m.tooSmall {
 			m.paused = false
 		}
-		h, _ := m.help.Update(msg)
-		t, _ := h.(helpModel)
-		m.help = t
+		h, _ := m.Help.Update(msg)
+		t, _ := h.(HelpModel)
+		m.Help = t
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "right", "l":
-			if m.currentFrame < len(m.frameSet)-1 {
+			if m.currentFrame < len(m.FrameSet)-1 {
 				m.currentFrame++
 			}
 		case "up", "k":
-			m.speed++
+			m.Speed++
 
 		case "down", "j":
-			if m.speed > 1 {
-				m.speed--
+			if m.Speed > 1 {
+				m.Speed--
 			}
 		case "left", "h":
 			if m.currentFrame > 0 {
 				m.currentFrame--
 			}
 		case "G":
-			m.currentFrame = len(m.frameSet) - 1
+			m.currentFrame = len(m.FrameSet) - 1
 		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
 			num, _ := strconv.Atoi(msg.String())
-			m.currentFrame = len(m.frameSet) - 1
+			m.currentFrame = len(m.FrameSet) - 1
 			m.currentFrame = m.currentFrame * num / 10
 		case " ":
 			m.paused = !m.paused
 			return m, m.tick()
 		default:
-			h, _ := m.help.Update(msg)
-			t, _ := h.(helpModel)
-			m.help = t
+			h, _ := m.Help.Update(msg)
+			t, _ := h.(HelpModel)
+			m.Help = t
 		}
 	}
-	m.progress.percent = float64(m.currentFrame) / float64(len(m.frameSet))
-	p, _ := m.progress.Update(msg)
-	t, _ := p.(modelProg)
-	m.progress = t
+	m.Progress.percent = float64(m.currentFrame) / float64(len(m.FrameSet))
+	p, _ := m.Progress.Update(msg)
+	t, _ := p.(ModelProg)
+	m.Progress = t
 
 	return m, nil
 }

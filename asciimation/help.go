@@ -1,4 +1,4 @@
-package main
+package asciimation
 
 import (
 	"github.com/charmbracelet/bubbles/help"
@@ -69,7 +69,7 @@ var keys = keyMap{
 	),
 }
 
-type helpModel struct {
+type HelpModel struct {
 	keys       keyMap
 	help       help.Model
 	inputStyle lipgloss.Style
@@ -77,19 +77,19 @@ type helpModel struct {
 	quitting   bool
 }
 
-func newHelpModel() helpModel {
-	return helpModel{
+func NewHelpModel() HelpModel {
+	return HelpModel{
 		keys:       keys,
 		help:       help.New(),
 		inputStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#FF75B7")),
 	}
 }
 
-func (m helpModel) Init() tea.Cmd {
+func (m HelpModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m helpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m HelpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.help.Width = msg.Width
@@ -103,7 +103,7 @@ func (m helpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m helpModel) View() string {
+func (m HelpModel) View() string {
 	out := m.help.View(m.keys)
 	if !m.help.ShowAll {
 		out += "\n\n"
