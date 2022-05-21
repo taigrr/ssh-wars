@@ -78,11 +78,21 @@ type HelpModel struct {
 }
 
 func NewHelpModel() HelpModel {
-	return HelpModel{
+	h := HelpModel{
 		keys:       keys,
 		help:       help.New(),
-		inputStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#FF75B7")),
+		inputStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")),
 	}
+	h.help.Styles.ShortKey = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
+	h.help.Styles.FullKey = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
+	h.help.Styles.FullDesc = h.inputStyle
+	h.help.Styles.ShortDesc = h.inputStyle
+	return h
+}
+
+func (m HelpModel) UpdateDoeFoot(df lipgloss.DoeFoot) HelpModel {
+	m.help = m.help.UpdateDoeFoot(df)
+	return m
 }
 
 func (m HelpModel) Init() tea.Cmd {

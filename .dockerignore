@@ -1,5 +1,4 @@
 .dockerignore
 Dockerfile
 ssh-wars
-main
 .ssh/

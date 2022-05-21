@@ -1,14 +1,10 @@
 FROM golang:1.18 AS builder
 MAINTAINER tai@taigrr.com
 RUN mkdir -p /src
-COPY starwars.ascii /src
-COPY *.go /src/
-COPY go.mod /src
-COPY go.sum /src
+ADD . /src/
 WORKDIR /src
 RUN go mod tidy
-RUN CGO_ENABLED=0 go build ./...
-RUN mv ssh-wars main
+RUN CGO_ENABLED=0 go build bin/main.go
 
 FROM scratch
 WORKDIR /app
