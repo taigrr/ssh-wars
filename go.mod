@@ -2,11 +2,11 @@ module github.com/taigrr/ssh-wars
 
 go 1.18
 
-replace github.com/charmbracelet/bubbles => ../bubbles
+replace github.com/charmbracelet/bubbles => github.com/taigrr/bubbles v0.10.5
 
 replace github.com/muesli/termenv => github.com/taigrr/termenv v0.11.2
 
-replace github.com/charmbracelet/lipgloss => ../lipgloss
+replace github.com/charmbracelet/lipgloss => github.com/taigrr/lipgloss v0.5.1
 
 require (
 	github.com/charmbracelet/bubbles v0.10.3

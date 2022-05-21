@@ -4,7 +4,7 @@ RUN mkdir -p /src
 ADD . /src/
 WORKDIR /src
 RUN go mod tidy
-RUN CGO_ENABLED=0 go build bin/main.go
+RUN CGO_ENABLED=0 go build main.go
 
 FROM scratch
 WORKDIR /app
