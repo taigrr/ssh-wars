@@ -9,16 +9,19 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/taigrr/ssh-wars/asciimation"
 )
 
 func main() {
-	var m asciimation.Model
-	m.FrameSet = asciimation.ParseFrames()
-	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("17")),
+	m := asciimation.New()
+	df := lipgloss.NewDoeFoot()
+	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("#174ea6"),
+		progress.WithColorProfile(df.Profile)),
 		MaxWidth: 65,
 		Padding:  2}
 	m.Help = asciimation.NewHelpModel()
+	m = m.UpdateDoeFoot(df)
 	m.Speed = 15
 
 	p := tea.NewProgram(m)

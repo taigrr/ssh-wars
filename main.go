@@ -65,17 +65,15 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		fmt.Println("no active terminal, skipping")
 		return nil, nil
 	}
-	var m asciimation.Model
-	m.FrameSet = asciimation.ParseFrames()
-
-	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("#0000FF"),
+	m := asciimation.New()
+	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("#174ea6"),
 		progress.WithColorProfile(getSSHTermInfo(pty))),
 		MaxWidth: 65,
 		Padding:  2}
 	m.Help = asciimation.NewHelpModel()
 	df := lipgloss.NewDoeFoot()
 	df = df.SetColorProfile(getSSHTermInfo(pty))
-	m.Help = m.Help.UpdateDoeFoot(df)
+	m = m.UpdateDoeFoot(df)
 	m.Speed = 15
 
 	return m, []tea.ProgramOption{tea.WithAltScreen()}

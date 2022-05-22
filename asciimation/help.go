@@ -70,23 +70,25 @@ var keys = keyMap{
 }
 
 type HelpModel struct {
-	keys       keyMap
-	help       help.Model
-	inputStyle lipgloss.Style
-	lastKey    string
-	quitting   bool
+	keys             keyMap
+	help             help.Model
+	descriptionStyle lipgloss.Style
+	keyStyle         lipgloss.Style
+	lastKey          string
+	quitting         bool
 }
 
 func NewHelpModel() HelpModel {
 	h := HelpModel{
-		keys:       keys,
-		help:       help.New(),
-		inputStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")),
+		keys:             keys,
+		help:             help.New(),
+		descriptionStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#DC3E58")),
+		keyStyle:         lipgloss.NewStyle().Foreground(lipgloss.Color("#ffc500")),
 	}
-	h.help.Styles.ShortKey = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
-	h.help.Styles.FullKey = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
-	h.help.Styles.FullDesc = h.inputStyle
-	h.help.Styles.ShortDesc = h.inputStyle
+	h.help.Styles.ShortKey = h.keyStyle
+	h.help.Styles.FullKey = h.keyStyle
+	h.help.Styles.FullDesc = h.descriptionStyle
+	h.help.Styles.ShortDesc = h.descriptionStyle
 	return h
 }
 

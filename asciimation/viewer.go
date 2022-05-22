@@ -4,23 +4,31 @@ import (
 	_ "embed"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 //go:embed starwars.ascii
 var asciiString string
 
+var onceBorder sync.Once
+var border string
+
 const viewportY = 13
 
-type TickMsg struct {
-}
+var yellow = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500"))
+var blue = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6"))
+
+type TickMsg struct{}
 
 type Model struct {
 	Progress     ModelProg
 	Help         HelpModel
 	FrameSet     []Frame
+	df           lipgloss.DoeFoot
 	Speed        int
 	currentFrame int
 	paused       bool
@@ -30,27 +38,73 @@ type Model struct {
 type Frame struct {
 	lines      []string
 	frameCount int
+	index      int
 }
 
-func (f Frame) String() string {
-	return strings.Join(f.lines, "\n")
+func New() Model {
+	m := Model{}
+	m.FrameSet = ParseFrames()
+	return m
+}
+func (m Model) UpdateDoeFoot(df lipgloss.DoeFoot) Model {
+	m.df = df
+	m.Help = m.Help.UpdateDoeFoot(df)
+	return m
+}
+
+func (f Frame) RenderWithDoeFoot(df lipgloss.DoeFoot) string {
+	onceBorder.Do(func() {
+		var sb strings.Builder
+		for i := 0; i < 71; i++ {
+			sb.WriteString("=")
+		}
+		border = sb.String()
+	})
+	localBorder := yellow.RenderForDoeFoot(border, df)
+	edge := yellow.RenderForDoeFoot("||", df)
+	var sb strings.Builder
+	sb.Grow((len(f.lines) + 2) * 72)
+	sb.WriteString(localBorder)
+	sb.WriteString("\n")
+	for _, l := range f.lines {
+		sb.WriteString(edge)
+		length := len(l)
+		if f.index == 48 {
+			l = blue.RenderForDoeFoot(l, df)
+		} else if f.index < 110 && f.index > 49 {
+			l = yellow.RenderForDoeFoot(l, df)
+		}
+		sb.WriteString(l)
+		for i := length; i < 67; i++ {
+			sb.WriteString(" ")
+		}
+		sb.WriteString(edge + "\n")
+	}
+	sb.WriteString(localBorder)
+	return sb.String()
 }
 
 func ParseFrames() []Frame {
 	var frames []Frame
 	asciiString = strings.ReplaceAll(asciiString, "\\'", "'")
-	asciiString = strings.ReplaceAll(asciiString, "\\\\", "\\")
+	asciiString = strings.ReplaceAll(asciiString, "\"", "\\\"")
 	lines := strings.Split(asciiString, "\\n")
 	var f Frame
 	for i, l := range lines {
 		if i%(viewportY+1) == 0 {
-			f = Frame{}
+			f = Frame{index: i / (viewportY + 1)}
 			countStr := l
 			c, _ := strconv.Atoi(countStr)
 			f.frameCount = c
 			continue
 		}
-		f.lines = append(f.lines, l)
+		u, err := strconv.Unquote("\"" + l + "\"")
+		// error is generated on the final line of the input
+		// to stay true to the original source, add it back anyway
+		if err != nil {
+			u = l
+		}
+		f.lines = append(f.lines, u)
 		if i%(viewportY+1) == viewportY {
 			frames = append(frames, f)
 		}
@@ -59,7 +113,8 @@ func ParseFrames() []Frame {
 }
 
 func (m Model) View() string {
-	return m.FrameSet[m.currentFrame].String() + "\n" + m.Progress.View() + m.Help.View() + "\n"
+
+	return m.FrameSet[m.currentFrame].RenderWithDoeFoot(m.df) + "\n" + m.Progress.View() + m.Help.View() + "\n"
 }
 
 func (m Model) Init() tea.Cmd {
