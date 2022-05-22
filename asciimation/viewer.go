@@ -11,6 +11,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+//go:embed intro.ascii
+var introString string
+
 //go:embed starwars.ascii
 var asciiString string
 
@@ -21,6 +24,9 @@ var border string
 var frameSet []Frame
 
 const viewportY = 13
+const longAgoFrame = 49
+const scrawlStart = 51
+const scrawlEnd = 111
 
 var yellow = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500"))
 var blue = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6"))
@@ -73,9 +79,9 @@ func (f Frame) RenderWithDoeFoot(df lipgloss.DoeFoot) string {
 	for _, l := range f.lines {
 		sb.WriteString(edge)
 		length := len(l)
-		if f.index == 48 {
+		if f.index == longAgoFrame {
 			l = blue.RenderForDoeFoot(l, df)
-		} else if f.index < 110 && f.index > 49 {
+		} else if f.index < scrawlEnd && f.index >= scrawlStart {
 			l = yellow.RenderForDoeFoot(l, df)
 		}
 		sb.WriteString(l)
@@ -90,10 +96,11 @@ func (f Frame) RenderWithDoeFoot(df lipgloss.DoeFoot) string {
 
 func parseFrames() []Frame {
 	var frames []Frame
+	f := Frame{index: 0}
+	lines := strings.Split(introString, "\n")
 	asciiString = strings.ReplaceAll(asciiString, "\\'", "'")
 	asciiString = strings.ReplaceAll(asciiString, "\"", "\\\"")
-	lines := strings.Split(asciiString, "\\n")
-	var f Frame
+	lines = append(lines, strings.Split(asciiString, "\\n")...)
 	for i, l := range lines {
 		if i%(viewportY+1) == 0 {
 			f = Frame{index: i / (viewportY + 1)}
