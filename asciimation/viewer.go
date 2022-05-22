@@ -15,7 +15,10 @@ import (
 var asciiString string
 
 var onceBorder sync.Once
+var onceFrames sync.Once
 var border string
+
+var frameSet []Frame
 
 const viewportY = 13
 
@@ -27,7 +30,6 @@ type TickMsg struct{}
 type Model struct {
 	Progress     ModelProg
 	Help         HelpModel
-	FrameSet     []Frame
 	df           lipgloss.DoeFoot
 	Speed        int
 	currentFrame int
@@ -43,7 +45,9 @@ type Frame struct {
 
 func New() Model {
 	m := Model{}
-	m.FrameSet = ParseFrames()
+	onceFrames.Do(func() {
+		frameSet = parseFrames()
+	})
 	return m
 }
 func (m Model) UpdateDoeFoot(df lipgloss.DoeFoot) Model {
@@ -84,7 +88,7 @@ func (f Frame) RenderWithDoeFoot(df lipgloss.DoeFoot) string {
 	return sb.String()
 }
 
-func ParseFrames() []Frame {
+func parseFrames() []Frame {
 	var frames []Frame
 	asciiString = strings.ReplaceAll(asciiString, "\\'", "'")
 	asciiString = strings.ReplaceAll(asciiString, "\"", "\\\"")
@@ -114,7 +118,7 @@ func ParseFrames() []Frame {
 
 func (m Model) View() string {
 
-	return m.FrameSet[m.currentFrame].RenderWithDoeFoot(m.df) + "\n" + m.Progress.View() + m.Help.View() + "\n"
+	return frameSet[m.currentFrame].RenderWithDoeFoot(m.df) + "\n" + m.Progress.View() + m.Help.View() + "\n"
 }
 
 func (m Model) Init() tea.Cmd {
@@ -122,7 +126,7 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) tick() tea.Cmd {
-	return tea.Tick(time.Second*time.Duration(m.FrameSet[m.currentFrame].frameCount)/time.Duration(m.Speed), func(t time.Time) tea.Msg {
+	return tea.Tick(time.Second*time.Duration(frameSet[m.currentFrame].frameCount)/time.Duration(m.Speed), func(t time.Time) tea.Msg {
 		return TickMsg{}
 	})
 }
@@ -133,7 +137,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.paused {
 			break
 		}
-		if m.currentFrame < len(m.FrameSet)-1 {
+		if m.currentFrame < len(frameSet)-1 {
 			m.currentFrame++
 			return m, m.tick()
 		} else {
@@ -154,7 +158,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "right", "l":
-			if m.currentFrame < len(m.FrameSet)-1 {
+			if m.currentFrame < len(frameSet)-1 {
 				m.currentFrame++
 			}
 		case "up", "k":
@@ -169,10 +173,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentFrame--
 			}
 		case "G":
-			m.currentFrame = len(m.FrameSet) - 1
+			m.currentFrame = len(frameSet) - 1
 		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
 			num, _ := strconv.Atoi(msg.String())
-			m.currentFrame = len(m.FrameSet) - 1
+			m.currentFrame = len(frameSet) - 1
 			m.currentFrame = m.currentFrame * num / 10
 		case " ":
 			m.paused = !m.paused
@@ -183,7 +187,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Help = t
 		}
 	}
-	m.Progress.percent = float64(m.currentFrame) / float64(len(m.FrameSet))
+	m.Progress.percent = float64(m.currentFrame) / float64(len(frameSet))
 	p, _ := m.Progress.Update(msg)
 	t, _ := p.(ModelProg)
 	m.Progress = t
