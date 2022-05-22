@@ -117,7 +117,9 @@ func parseFrames() []Frame {
 }
 
 func (m Model) View() string {
-
+	if m.tooSmall {
+		return "Window is too small for player.\nPlease try resizing your window."
+	}
 	return frameSet[m.currentFrame].RenderWithDoeFoot(m.df) + "\n" + m.Progress.View() + m.Help.View() + "\n"
 }
 
@@ -132,6 +134,8 @@ func (m Model) tick() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	cmd = nil
 	switch msg := msg.(type) {
 	case TickMsg:
 		if m.paused {
@@ -144,11 +148,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.paused = true
 		}
 	case tea.WindowSizeMsg:
-		if msg.Width < 68 {
+		if msg.Width < 72 || msg.Height < 22 {
 			m.paused = true
 			m.tooSmall = true
 		} else if m.tooSmall {
 			m.paused = false
+			m.tooSmall = false
+			cmd = m.tick()
 		}
 		h, _ := m.Help.Update(msg)
 		t, _ := h.(HelpModel)
@@ -192,5 +198,5 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	t, _ := p.(ModelProg)
 	m.Progress = t
 
-	return m, nil
+	return m, cmd
 }
