@@ -1,6 +1,6 @@
 module github.com/taigrr/ssh-wars
 
-go 1.18
+go 1.20
 
 replace github.com/charmbracelet/bubbles => github.com/taigrr/bubbles v0.10.5
 

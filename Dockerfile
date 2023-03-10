@@ -1,4 +1,4 @@
-FROM golang:1.18 AS builder
+FROM golang:1.20 AS builder
 MAINTAINER tai@taigrr.com
 RUN mkdir -p /src
 ADD . /src/
