@@ -14,7 +14,7 @@ type ModelProg struct {
 	Progress progress.Model
 }
 
-func (_ ModelProg) Init() tea.Cmd {
+func (ModelProg) Init() tea.Cmd {
 	return nil
 }
 
@@ -26,7 +26,6 @@ func (m ModelProg) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Progress.Width = m.MaxWidth
 		}
 		return m, nil
-
 	default:
 		return m, nil
 	}

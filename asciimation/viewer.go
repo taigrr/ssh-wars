@@ -17,9 +17,7 @@ var introString string
 //go:embed starwars.ascii
 var asciiString string
 
-var onceBorder sync.Once
 var onceFrames sync.Once
-var border string
 
 var frameSet []Frame
 
@@ -28,16 +26,14 @@ const longAgoFrame = 49
 const scrawlStart = 51
 const scrawlEnd = 111
 
-var yellow = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500"))
-var blue = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6"))
-
 type TickMsg struct{}
 
 type Model struct {
 	Progress     ModelProg
 	Help         HelpModel
-	df           lipgloss.DoeFoot
 	Speed        int
+	yellow       lipgloss.Style
+	blue         lipgloss.Style
 	currentFrame int
 	paused       bool
 	tooSmall     bool
@@ -49,29 +45,25 @@ type Frame struct {
 	index      int
 }
 
-func New() Model {
-	m := Model{}
+func New(renderer *lipgloss.Renderer) Model {
+	m := Model{
+		yellow: renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500")),
+		blue:   renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6")),
+	}
 	onceFrames.Do(func() {
 		frameSet = parseFrames()
 	})
 	return m
 }
-func (m Model) UpdateDoeFoot(df lipgloss.DoeFoot) Model {
-	m.df = df
-	m.Help = m.Help.UpdateDoeFoot(df)
-	return m
-}
 
-func (f Frame) RenderWithDoeFoot(df lipgloss.DoeFoot) string {
-	onceBorder.Do(func() {
-		var sb strings.Builder
-		for i := 0; i < 71; i++ {
-			sb.WriteString("=")
-		}
-		border = sb.String()
-	})
-	localBorder := yellow.RenderForDoeFoot(border, df)
-	edge := yellow.RenderForDoeFoot("||", df)
+func (f Frame) Render(yellow, blue lipgloss.Style) string {
+	var border strings.Builder
+	for i := 0; i < 71; i++ {
+		border.WriteString("=")
+	}
+	localBorder := yellow.Render(border.String())
+	edge := yellow.Render("||")
+
 	var sb strings.Builder
 	sb.Grow((len(f.lines) + 2) * 72)
 	sb.WriteString(localBorder)
@@ -80,9 +72,9 @@ func (f Frame) RenderWithDoeFoot(df lipgloss.DoeFoot) string {
 		sb.WriteString(edge)
 		length := len(l)
 		if f.index == longAgoFrame {
-			l = blue.RenderForDoeFoot(l, df)
+			l = blue.Render(l)
 		} else if f.index < scrawlEnd && f.index >= scrawlStart {
-			l = yellow.RenderForDoeFoot(l, df)
+			l = yellow.Render(l)
 		}
 		sb.WriteString(l)
 		for i := length; i < 67; i++ {
@@ -110,8 +102,6 @@ func parseFrames() []Frame {
 			continue
 		}
 		u, err := strconv.Unquote("\"" + l + "\"")
-		// error is generated on the final line of the input
-		// to stay true to the original source, add it back anyway
 		if err != nil {
 			u = l
 		}
@@ -127,7 +117,7 @@ func (m Model) View() string {
 	if m.tooSmall {
 		return "Window is too small for player.\nPlease try resizing your window."
 	}
-	return frameSet[m.currentFrame].RenderWithDoeFoot(m.df) + "\n" + m.Progress.View() + m.Help.View() + "\n"
+	return frameSet[m.currentFrame].Render(m.yellow, m.blue) + "\n" + m.Progress.View() + m.Help.View() + "\n"
 }
 
 func (m Model) Init() tea.Cmd {
@@ -176,7 +166,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "up", "k":
 			m.Speed++
-
 		case "down", "j":
 			if m.Speed > 1 {
 				m.Speed--
