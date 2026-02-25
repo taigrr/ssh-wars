@@ -1,10 +1,8 @@
 package main
 
-// An example Bubble Tea server. This will put an ssh session into alt screen
-// and continually print up to date terminal information.
-
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -15,12 +13,11 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
+	"github.com/charmbracelet/wish/activeterm"
 	bm "github.com/charmbracelet/wish/bubbletea"
 	lm "github.com/charmbracelet/wish/logging"
-	"github.com/gliderlabs/ssh"
-	"github.com/muesli/termenv"
 	"github.com/taigrr/ssh-wars/asciimation"
 )
 
@@ -34,6 +31,7 @@ func main() {
 		wish.WithHostKeyPath(".ssh/term_info_ed25519"),
 		wish.WithMiddleware(
 			bm.Middleware(teaHandler),
+			activeterm.Middleware(),
 			lm.Middleware(),
 		),
 	)
@@ -45,7 +43,7 @@ func main() {
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	log.Printf("Starting SSH server on %s:%d", *host, *port)
 	go func() {
-		if err = s.ListenAndServe(); err != nil {
+		if err = s.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
 			log.Fatalln(err)
 		}
 	}()
@@ -54,32 +52,28 @@ func main() {
 	log.Println("Stopping SSH server")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer func() { cancel() }()
-	if err := s.Shutdown(ctx); err != nil {
+	if err := s.Shutdown(ctx); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
 		log.Fatalln(err)
 	}
 }
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	pty, _, active := s.Pty()
+	_, _, active := s.Pty()
 	if !active {
 		fmt.Println("no active terminal, skipping")
 		return nil, nil
 	}
-	m := asciimation.New()
-	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("#174ea6"),
-		progress.WithColorProfile(getSSHTermInfo(pty))),
+
+	renderer := bm.MakeRenderer(s)
+
+	m := asciimation.New(renderer)
+	m.Progress = asciimation.ModelProg{
+		Progress: progress.New(progress.WithSolidFill("#174ea6")),
 		MaxWidth: 65,
-		Padding:  2}
-	m.Help = asciimation.NewHelpModel()
-	df := lipgloss.NewDoeFoot()
-	df = df.SetColorProfile(getSSHTermInfo(pty))
-	m = m.UpdateDoeFoot(df)
+		Padding:  2,
+	}
+	m.Help = asciimation.NewHelpModel(renderer)
 	m.Speed = 15
 
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
-}
-
-func getSSHTermInfo(pty ssh.Pty) termenv.Profile {
-	termOut := termenv.NewOutputWithProfileEnv(nil, pty.Term, "")
-	return termOut.Profile
 }

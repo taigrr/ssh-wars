@@ -1,7 +1,6 @@
 package main
 
-// An example Bubble Tea server. This will put an ssh session into alt screen
-// and continually print up to date terminal information.
+// A standalone Bubble Tea client for the Star Wars ASCII animation.
 
 import (
 	"fmt"
@@ -14,20 +13,19 @@ import (
 )
 
 func main() {
-	m := asciimation.New()
-	df := lipgloss.NewDoeFoot()
-	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("#174ea6"),
-		progress.WithColorProfile(df.Profile)),
+	renderer := lipgloss.DefaultRenderer()
+	m := asciimation.New(renderer)
+	m.Progress = asciimation.ModelProg{
+		Progress: progress.New(progress.WithSolidFill("#174ea6")),
 		MaxWidth: 65,
-		Padding:  2}
-	m.Help = asciimation.NewHelpModel()
-	m = m.UpdateDoeFoot(df)
+		Padding:  2,
+	}
+	m.Help = asciimation.NewHelpModel(renderer)
 	m.Speed = 15
 
 	p := tea.NewProgram(m)
-	if err := p.Start(); err != nil {
+	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
-
 }

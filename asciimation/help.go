@@ -78,23 +78,18 @@ type HelpModel struct {
 	quitting         bool
 }
 
-func NewHelpModel() HelpModel {
+func NewHelpModel(renderer *lipgloss.Renderer) HelpModel {
 	h := HelpModel{
 		keys:             keys,
 		help:             help.New(),
-		descriptionStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#DC3E58")),
-		keyStyle:         lipgloss.NewStyle().Foreground(lipgloss.Color("#ffc500")),
+		descriptionStyle: renderer.NewStyle().Foreground(lipgloss.Color("#DC3E58")),
+		keyStyle:         renderer.NewStyle().Foreground(lipgloss.Color("#ffc500")),
 	}
 	h.help.Styles.ShortKey = h.keyStyle
 	h.help.Styles.FullKey = h.keyStyle
 	h.help.Styles.FullDesc = h.descriptionStyle
 	h.help.Styles.ShortDesc = h.descriptionStyle
 	return h
-}
-
-func (m HelpModel) UpdateDoeFoot(df lipgloss.DoeFoot) HelpModel {
-	m.help = m.help.UpdateDoeFoot(df)
-	return m
 }
 
 func (m HelpModel) Init() tea.Cmd {
@@ -105,7 +100,6 @@ func (m HelpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.help.Width = msg.Width
-
 	case tea.KeyMsg:
 		if key.Matches(msg, m.keys.Help) {
 			m.help.ShowAll = !m.help.ShowAll
