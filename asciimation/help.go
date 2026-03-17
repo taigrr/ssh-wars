@@ -74,8 +74,6 @@ type HelpModel struct {
 	help             help.Model
 	descriptionStyle lipgloss.Style
 	keyStyle         lipgloss.Style
-	lastKey          string
-	quitting         bool
 }
 
 func NewHelpModel(renderer *lipgloss.Renderer) HelpModel {
