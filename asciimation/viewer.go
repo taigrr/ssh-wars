@@ -176,6 +176,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "G":
 			m.currentFrame = len(frameSet) - 1
+		case "g":
+			m.currentFrame = 0
 		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
 			num, _ := strconv.Atoi(msg.String())
 			m.currentFrame = len(frameSet) - 1
