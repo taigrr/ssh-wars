@@ -16,7 +16,8 @@ type keyMap struct {
 	Quit    key.Binding
 	Numbers key.Binding
 	Space   key.Binding
-	G       key.Binding
+	G      key.Binding
+	GSmall key.Binding
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
@@ -27,7 +28,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Space, k.Up, k.Down},
 		{k.Left, k.Right, k.Help},
-		{k.Numbers, k.G, k.Quit},
+		{k.Numbers, k.GSmall, k.G, k.Quit},
 	}
 }
 
@@ -66,6 +67,10 @@ var keys = keyMap{
 	G: key.NewBinding(
 		key.WithKeys("G"),
 		key.WithHelp("G", "jump to end"),
+	),
+	GSmall: key.NewBinding(
+		key.WithKeys("g"),
+		key.WithHelp("g", "jump to start"),
 	),
 }
 

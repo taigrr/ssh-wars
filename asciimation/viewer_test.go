@@ -128,6 +128,13 @@ func TestModelUpdate_Navigation(t *testing.T) {
 	if um.currentFrame != len(frameSet)-1 {
 		t.Errorf("expected last frame, got %d", um.currentFrame)
 	}
+
+	// Jump to start
+	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+	um = updated.(Model)
+	if um.currentFrame != 0 {
+		t.Errorf("expected frame 0 after g, got %d", um.currentFrame)
+	}
 }
 
 func TestModelUpdate_NumberJump(t *testing.T) {
