@@ -15,12 +15,10 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
 	bm "github.com/charmbracelet/wish/bubbletea"
 	lm "github.com/charmbracelet/wish/logging"
-	"github.com/gliderlabs/ssh"
-	"github.com/muesli/termenv"
 	"github.com/taigrr/ssh-wars/asciimation"
 )
 
@@ -60,26 +58,20 @@ func main() {
 }
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	pty, _, active := s.Pty()
+	_, _, active := s.Pty()
 	if !active {
 		fmt.Println("no active terminal, skipping")
 		return nil, nil
 	}
 	m := asciimation.New()
+	renderer := bm.MakeRenderer(s)
 	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("#174ea6"),
-		progress.WithColorProfile(getSSHTermInfo(pty))),
+		progress.WithColorProfile(renderer.ColorProfile())),
 		MaxWidth: 65,
 		Padding:  2}
 	m.Help = asciimation.NewHelpModel()
-	df := lipgloss.NewDoeFoot()
-	df = df.SetColorProfile(getSSHTermInfo(pty))
-	m = m.UpdateDoeFoot(df)
+	m = m.UpdateRenderer(renderer.ColorProfile())
 	m.Speed = 15
 
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
-}
-
-func getSSHTermInfo(pty ssh.Pty) termenv.Profile {
-	termOut := termenv.NewOutputWithProfileEnv(nil, pty.Term, "")
-	return termOut.Profile
 }

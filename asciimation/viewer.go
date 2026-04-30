@@ -2,6 +2,7 @@ package asciimation
 
 import (
 	_ "embed"
+	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -9,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 )
 
 //go:embed intro.ascii
@@ -28,15 +30,12 @@ const longAgoFrame = 49
 const scrawlStart = 51
 const scrawlEnd = 111
 
-var yellow = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500"))
-var blue = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6"))
-
 type TickMsg struct{}
 
 type Model struct {
 	Progress     ModelProg
 	Help         HelpModel
-	df           lipgloss.DoeFoot
+	renderer     *lipgloss.Renderer
 	Speed        int
 	currentFrame int
 	paused       bool
@@ -50,19 +49,22 @@ type Frame struct {
 }
 
 func New() Model {
-	m := Model{}
+	renderer := lipgloss.NewRenderer(io.Discard)
+	m := Model{renderer: renderer}
 	onceFrames.Do(func() {
 		frameSet = parseFrames()
 	})
 	return m
 }
-func (m Model) UpdateDoeFoot(df lipgloss.DoeFoot) Model {
-	m.df = df
-	m.Help = m.Help.UpdateDoeFoot(df)
+
+func (m Model) UpdateRenderer(profile termenv.Profile) Model {
+	renderer := lipgloss.NewRenderer(io.Discard, termenv.WithProfile(profile))
+	m.renderer = renderer
+	m.Help = m.Help.UpdateRenderer(renderer)
 	return m
 }
 
-func (f Frame) RenderWithDoeFoot(df lipgloss.DoeFoot) string {
+func (f Frame) RenderWithRenderer(renderer *lipgloss.Renderer) string {
 	onceBorder.Do(func() {
 		var sb strings.Builder
 		for i := 0; i < 71; i++ {
@@ -70,21 +72,23 @@ func (f Frame) RenderWithDoeFoot(df lipgloss.DoeFoot) string {
 		}
 		border = sb.String()
 	})
-	localBorder := yellow.RenderForDoeFoot(border, df)
-	edge := yellow.RenderForDoeFoot("||", df)
+	yellow := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500"))
+	blue := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6"))
+	localBorder := yellow.Render(border)
+	edge := yellow.Render("||")
 	var sb strings.Builder
 	sb.Grow((len(f.lines) + 2) * 72)
 	sb.WriteString(localBorder)
 	sb.WriteString("\n")
-	for _, l := range f.lines {
+	for _, line := range f.lines {
 		sb.WriteString(edge)
-		length := len(l)
+		length := len(line)
 		if f.index == longAgoFrame {
-			l = blue.RenderForDoeFoot(l, df)
+			line = blue.Render(line)
 		} else if f.index < scrawlEnd && f.index >= scrawlStart {
-			l = yellow.RenderForDoeFoot(l, df)
+			line = yellow.Render(line)
 		}
-		sb.WriteString(l)
+		sb.WriteString(line)
 		for i := length; i < 67; i++ {
 			sb.WriteString(" ")
 		}
@@ -101,21 +105,21 @@ func parseFrames() []Frame {
 	asciiString = strings.ReplaceAll(asciiString, "\\'", "'")
 	asciiString = strings.ReplaceAll(asciiString, "\"", "\\\"")
 	lines = append(lines, strings.Split(asciiString, "\\n")...)
-	for i, l := range lines {
+	for i, line := range lines {
 		if i%(viewportY+1) == 0 {
 			f = Frame{index: i / (viewportY + 1)}
-			countStr := l
-			c, _ := strconv.Atoi(countStr)
-			f.frameCount = c
+			countStr := line
+			count, _ := strconv.Atoi(countStr)
+			f.frameCount = count
 			continue
 		}
-		u, err := strconv.Unquote("\"" + l + "\"")
+		unquoted, err := strconv.Unquote("\"" + line + "\"")
 		// error is generated on the final line of the input
 		// to stay true to the original source, add it back anyway
 		if err != nil {
-			u = l
+			unquoted = line
 		}
-		f.lines = append(f.lines, u)
+		f.lines = append(f.lines, unquoted)
 		if i%(viewportY+1) == viewportY {
 			frames = append(frames, f)
 		}
@@ -127,7 +131,7 @@ func (m Model) View() string {
 	if m.tooSmall {
 		return "Window is too small for player.\nPlease try resizing your window."
 	}
-	return frameSet[m.currentFrame].RenderWithDoeFoot(m.df) + "\n" + m.Progress.View() + m.Help.View() + "\n"
+	return frameSet[m.currentFrame].RenderWithRenderer(m.renderer) + "\n" + m.Progress.View() + m.Help.View() + "\n"
 }
 
 func (m Model) Init() tea.Cmd {
@@ -142,7 +146,6 @@ func (m Model) tick() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	cmd = nil
 	switch msg := msg.(type) {
 	case TickMsg:
 		if m.paused {
@@ -151,9 +154,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.currentFrame < len(frameSet)-1 {
 			m.currentFrame++
 			return m, m.tick()
-		} else {
-			m.paused = true
 		}
+		m.paused = true
 	case tea.WindowSizeMsg:
 		if msg.Width < 72 || msg.Height < 22 {
 			m.paused = true
@@ -163,9 +165,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.tooSmall = false
 			cmd = m.tick()
 		}
-		h, _ := m.Help.Update(msg)
-		t, _ := h.(HelpModel)
-		m.Help = t
+		helper, _ := m.Help.Update(msg)
+		m.Help = helper.(HelpModel)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -176,7 +177,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "up", "k":
 			m.Speed++
-
 		case "down", "j":
 			if m.Speed > 1 {
 				m.Speed--
@@ -195,15 +195,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.paused = !m.paused
 			return m, m.tick()
 		default:
-			h, _ := m.Help.Update(msg)
-			t, _ := h.(HelpModel)
-			m.Help = t
+			helper, _ := m.Help.Update(msg)
+			m.Help = helper.(HelpModel)
 		}
 	}
 	m.Progress.percent = float64(m.currentFrame) / float64(len(frameSet))
-	p, _ := m.Progress.Update(msg)
-	t, _ := p.(ModelProg)
-	m.Progress = t
+	progressModel, _ := m.Progress.Update(msg)
+	m.Progress = progressModel.(ModelProg)
 
 	return m, cmd
 }

@@ -70,30 +70,32 @@ var keys = keyMap{
 }
 
 type HelpModel struct {
-	keys             keyMap
-	help             help.Model
-	descriptionStyle lipgloss.Style
-	keyStyle         lipgloss.Style
-	lastKey          string
-	quitting         bool
+	keys keyMap
+	help help.Model
 }
 
 func NewHelpModel() HelpModel {
-	h := HelpModel{
-		keys:             keys,
-		help:             help.New(),
-		descriptionStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#DC3E58")),
-		keyStyle:         lipgloss.NewStyle().Foreground(lipgloss.Color("#ffc500")),
+	helpModel := help.New()
+	keyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#ffc500"))
+	descriptionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#DC3E58"))
+	helpModel.Styles.ShortKey = keyStyle
+	helpModel.Styles.FullKey = keyStyle
+	helpModel.Styles.FullDesc = descriptionStyle
+	helpModel.Styles.ShortDesc = descriptionStyle
+
+	return HelpModel{
+		keys: keys,
+		help: helpModel,
 	}
-	h.help.Styles.ShortKey = h.keyStyle
-	h.help.Styles.FullKey = h.keyStyle
-	h.help.Styles.FullDesc = h.descriptionStyle
-	h.help.Styles.ShortDesc = h.descriptionStyle
-	return h
 }
 
-func (m HelpModel) UpdateDoeFoot(df lipgloss.DoeFoot) HelpModel {
-	m.help = m.help.UpdateDoeFoot(df)
+func (m HelpModel) UpdateRenderer(renderer *lipgloss.Renderer) HelpModel {
+	keyStyle := renderer.NewStyle().Foreground(lipgloss.Color("#ffc500"))
+	descriptionStyle := renderer.NewStyle().Foreground(lipgloss.Color("#DC3E58"))
+	m.help.Styles.ShortKey = keyStyle
+	m.help.Styles.FullKey = keyStyle
+	m.help.Styles.FullDesc = descriptionStyle
+	m.help.Styles.ShortDesc = descriptionStyle
 	return m
 }
 
@@ -105,7 +107,6 @@ func (m HelpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.help.Width = msg.Width
-
 	case tea.KeyMsg:
 		if key.Matches(msg, m.keys.Help) {
 			m.help.ShowAll = !m.help.ShowAll

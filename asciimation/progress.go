@@ -14,7 +14,7 @@ type ModelProg struct {
 	Progress progress.Model
 }
 
-func (_ ModelProg) Init() tea.Cmd {
+func (ModelProg) Init() tea.Cmd {
 	return nil
 }
 

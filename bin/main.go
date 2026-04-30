@@ -9,25 +9,27 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 	"github.com/taigrr/ssh-wars/asciimation"
 )
 
 func main() {
 	m := asciimation.New()
-	df := lipgloss.NewDoeFoot()
-	m.Progress = asciimation.ModelProg{Progress: progress.New(progress.WithSolidFill("#174ea6"),
-		progress.WithColorProfile(df.Profile)),
+	profile := termenv.ColorProfile()
+	m.Progress = asciimation.ModelProg{Progress: progress.New(
+		progress.WithSolidFill("#174ea6"),
+		progress.WithColorProfile(profile),
+	),
 		MaxWidth: 65,
-		Padding:  2}
+		Padding:  2,
+	}
 	m.Help = asciimation.NewHelpModel()
-	m = m.UpdateDoeFoot(df)
+	m = m.UpdateRenderer(profile)
 	m.Speed = 15
 
 	p := tea.NewProgram(m)
-	if err := p.Start(); err != nil {
+	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
-
 }
