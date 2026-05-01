@@ -53,6 +53,20 @@ func TestNewModel(t *testing.T) {
 	}
 }
 
+func TestNewDefaultModel(t *testing.T) {
+	renderer := lipgloss.DefaultRenderer()
+	m := NewDefaultModel(renderer)
+	if m.Speed != 15 {
+		t.Errorf("expected default speed 15, got %d", m.Speed)
+	}
+	if m.Help.help.Width != 0 {
+		t.Errorf("expected initial help width 0, got %d", m.Help.help.Width)
+	}
+	if m.Progress.MaxWidth != 65 {
+		t.Errorf("expected default progress width 65, got %d", m.Progress.MaxWidth)
+	}
+}
+
 func TestModelUpdate_Quit(t *testing.T) {
 	renderer := lipgloss.DefaultRenderer()
 	m := New(renderer)
