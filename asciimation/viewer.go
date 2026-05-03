@@ -191,10 +191,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Help = t
 		}
 	}
-	m.Progress.percent = float64(m.currentFrame) / float64(len(frameSet))
+	m.Progress.percent = progressPercent(m.currentFrame, len(frameSet))
 	p, _ := m.Progress.Update(msg)
 	t, _ := p.(ModelProg)
 	m.Progress = t
 
 	return m, cmd
+}
+
+func progressPercent(currentFrame, frameCount int) float64 {
+	if frameCount <= 1 {
+		return 1
+	}
+
+	percent := float64(currentFrame) / float64(frameCount-1)
+	if percent < 0 {
+		return 0
+	}
+	if percent > 1 {
+		return 1
+	}
+	return percent
 }
