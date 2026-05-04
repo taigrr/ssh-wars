@@ -22,6 +22,9 @@ func (m ModelProg) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Progress.Width = msg.Width - m.Padding*2 - 4
+		if m.Progress.Width < 0 {
+			m.Progress.Width = 0
+		}
 		if m.Progress.Width > m.MaxWidth {
 			m.Progress.Width = m.MaxWidth
 		}

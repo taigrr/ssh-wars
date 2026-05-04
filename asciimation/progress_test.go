@@ -30,6 +30,13 @@ func TestModelProg_Update_WindowResize(t *testing.T) {
 		t.Errorf("expected width %d, got %d", expected, um.Progress.Width)
 	}
 
+	// Very small window: width should never go negative.
+	updated, _ = m.Update(tea.WindowSizeMsg{Width: 6, Height: 40})
+	um = updated.(ModelProg)
+	if um.Progress.Width != 0 {
+		t.Errorf("expected width clamped at 0, got %d", um.Progress.Width)
+	}
+
 	// Large window: width should be capped at MaxWidth
 	updated, _ = m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
 	um = updated.(ModelProg)
