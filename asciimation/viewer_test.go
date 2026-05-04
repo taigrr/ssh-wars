@@ -53,6 +53,20 @@ func TestNewModel(t *testing.T) {
 	}
 }
 
+func TestNewDefaultModel(t *testing.T) {
+	renderer := lipgloss.DefaultRenderer()
+	m := NewDefaultModel(renderer)
+	if m.Speed != 15 {
+		t.Errorf("expected default speed 15, got %d", m.Speed)
+	}
+	if m.Help.help.Width != 0 {
+		t.Errorf("expected initial help width 0, got %d", m.Help.help.Width)
+	}
+	if m.Progress.MaxWidth != 65 {
+		t.Errorf("expected default progress width 65, got %d", m.Progress.MaxWidth)
+	}
+}
+
 func TestModelUpdate_Quit(t *testing.T) {
 	renderer := lipgloss.DefaultRenderer()
 	m := New(renderer)
@@ -198,5 +212,43 @@ func TestModelView(t *testing.T) {
 	view := m.View()
 	if len(view) == 0 {
 		t.Error("View returned empty string")
+	}
+}
+
+func TestProgressPercent(t *testing.T) {
+	tests := []struct {
+		name         string
+		currentFrame int
+		frameCount   int
+		want         float64
+	}{
+		{name: "empty defaults to complete", currentFrame: 0, frameCount: 0, want: 1},
+		{name: "single frame is complete", currentFrame: 0, frameCount: 1, want: 1},
+		{name: "first frame is zero", currentFrame: 0, frameCount: 10, want: 0},
+		{name: "middle frame scales against last frame", currentFrame: 4, frameCount: 9, want: 0.5},
+		{name: "last frame is complete", currentFrame: 8, frameCount: 9, want: 1},
+		{name: "clamps negative frame", currentFrame: -1, frameCount: 9, want: 0},
+		{name: "clamps past end", currentFrame: 99, frameCount: 9, want: 1},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := progressPercent(test.currentFrame, test.frameCount); got != test.want {
+				t.Fatalf("progressPercent(%d, %d) = %v, want %v", test.currentFrame, test.frameCount, got, test.want)
+			}
+		})
+	}
+}
+
+func TestModelUpdate_SetsCompleteProgressOnLastFrame(t *testing.T) {
+	renderer := lipgloss.DefaultRenderer()
+	model := NewDefaultModel(renderer)
+	model.currentFrame = len(frameSet) - 1
+	model.paused = true
+
+	updated, _ := model.Update(TickMsg{})
+	updatedModel := updated.(Model)
+	if updatedModel.Progress.percent != 1 {
+		t.Fatalf("expected complete progress on last frame, got %v", updatedModel.Progress.percent)
 	}
 }
