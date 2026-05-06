@@ -140,7 +140,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.currentFrame < len(frameSet)-1 {
 			m.currentFrame++
-			return m, m.tick()
+			cmd = m.tick()
 		} else {
 			m.paused = true
 		}
