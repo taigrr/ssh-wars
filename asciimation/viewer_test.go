@@ -69,15 +69,24 @@ func TestNewDefaultModel(t *testing.T) {
 
 func TestModelUpdate_Quit(t *testing.T) {
 	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
-	m.Help = NewHelpModel(renderer)
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-	if updated == nil {
-		t.Fatal("Update returned nil model")
+	tests := []tea.KeyMsg{
+		{Type: tea.KeyRunes, Runes: []rune{'q'}},
+		{Type: tea.KeyEsc},
+		{Type: tea.KeyCtrlC},
 	}
-	if cmd == nil {
-		t.Fatal("expected quit command, got nil")
+
+	for _, msg := range tests {
+		m := New(renderer)
+		m.Help = NewHelpModel(renderer)
+
+		updated, cmd := m.Update(msg)
+		if updated == nil {
+			t.Fatal("Update returned nil model")
+		}
+		if cmd == nil {
+			t.Fatalf("expected quit command for key %q, got nil", msg.String())
+		}
 	}
 }
 
