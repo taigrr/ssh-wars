@@ -69,15 +69,24 @@ func TestNewDefaultModel(t *testing.T) {
 
 func TestModelUpdate_Quit(t *testing.T) {
 	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
-	m.Help = NewHelpModel(renderer)
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-	if updated == nil {
-		t.Fatal("Update returned nil model")
+	tests := []tea.KeyMsg{
+		{Type: tea.KeyRunes, Runes: []rune{'q'}},
+		{Type: tea.KeyEsc},
+		{Type: tea.KeyCtrlC},
 	}
-	if cmd == nil {
-		t.Fatal("expected quit command, got nil")
+
+	for _, msg := range tests {
+		m := New(renderer)
+		m.Help = NewHelpModel(renderer)
+
+		updated, cmd := m.Update(msg)
+		if updated == nil {
+			t.Fatal("Update returned nil model")
+		}
+		if cmd == nil {
+			t.Fatalf("expected quit command for key %q, got nil", msg.String())
+		}
 	}
 }
 
@@ -204,6 +213,25 @@ func TestModelUpdate_WindowTooSmall(t *testing.T) {
 	}
 }
 
+func TestModelUpdate_WindowResizeRecoversFromTooSmall(t *testing.T) {
+	renderer := lipgloss.DefaultRenderer()
+	m := NewDefaultModel(renderer)
+	m.paused = true
+	m.tooSmall = true
+
+	updated, cmd := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	um := updated.(Model)
+	if um.tooSmall {
+		t.Fatal("expected resize to clear tooSmall state")
+	}
+	if um.paused {
+		t.Fatal("expected resize to resume playback")
+	}
+	if cmd == nil {
+		t.Fatal("expected resize recovery to schedule the next tick")
+	}
+}
+
 func TestModelView(t *testing.T) {
 	renderer := lipgloss.DefaultRenderer()
 	m := New(renderer)
@@ -240,6 +268,24 @@ func TestProgressPercent(t *testing.T) {
 	}
 }
 
+func TestModelUpdate_AdvancesFrameOnTick(t *testing.T) {
+	renderer := lipgloss.DefaultRenderer()
+	model := NewDefaultModel(renderer)
+	model.Speed = 15
+
+	updated, cmd := model.Update(TickMsg{})
+	updatedModel := updated.(Model)
+	if updatedModel.currentFrame != 1 {
+		t.Fatalf("expected tick to advance to frame 1, got %d", updatedModel.currentFrame)
+	}
+	if updatedModel.Progress.percent != progressPercent(1, len(frameSet)) {
+		t.Fatalf("expected progress percent to track frame advance, got %v", updatedModel.Progress.percent)
+	}
+	if cmd == nil {
+		t.Fatal("expected tick to schedule the next frame")
+	}
+}
+
 func TestModelUpdate_SetsCompleteProgressOnLastFrame(t *testing.T) {
 	renderer := lipgloss.DefaultRenderer()
 	model := NewDefaultModel(renderer)
@@ -250,5 +296,21 @@ func TestModelUpdate_SetsCompleteProgressOnLastFrame(t *testing.T) {
 	updatedModel := updated.(Model)
 	if updatedModel.Progress.percent != 1 {
 		t.Fatalf("expected complete progress on last frame, got %v", updatedModel.Progress.percent)
+	}
+}
+
+func TestModelUpdate_PausesAtLastFrameAfterTick(t *testing.T) {
+	renderer := lipgloss.DefaultRenderer()
+	model := NewDefaultModel(renderer)
+	model.currentFrame = len(frameSet) - 1
+	model.paused = false
+
+	updated, cmd := model.Update(TickMsg{})
+	updatedModel := updated.(Model)
+	if !updatedModel.paused {
+		t.Fatal("expected final tick to pause playback")
+	}
+	if cmd != nil {
+		t.Fatal("expected final tick to stop scheduling more frames")
 	}
 }
