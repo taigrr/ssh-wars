@@ -1,6 +1,6 @@
 module github.com/taigrr/ssh-wars
 
-go 1.26.2
+go 1.26.4
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0

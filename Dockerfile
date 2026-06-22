@@ -1,9 +1,11 @@
-FROM golang:1.26 AS builder
+FROM golang:1.26.4 AS builder
 LABEL maintainer="tai@taigrr.com"
-RUN mkdir -p /src
-ADD . /src/
 WORKDIR /src
-RUN go mod tidy
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
 RUN CGO_ENABLED=0 go build -o ssh-wars main.go
 
 FROM scratch
