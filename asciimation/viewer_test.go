@@ -180,16 +180,22 @@ func TestModelUpdate_Pause(t *testing.T) {
 	m.Help = NewHelpModel(renderer)
 	m.Speed = 15
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeySpace})
 	um := updated.(Model)
 	if !um.paused {
 		t.Error("expected model to be paused after space")
 	}
+	if cmd != nil {
+		t.Fatal("expected pausing playback to stop scheduling ticks")
+	}
 
-	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeySpace})
+	updated, cmd = um.Update(tea.KeyMsg{Type: tea.KeySpace})
 	um = updated.(Model)
 	if um.paused {
 		t.Error("expected model to be unpaused after second space")
+	}
+	if cmd == nil {
+		t.Fatal("expected unpausing playback to schedule the next tick")
 	}
 }
 
