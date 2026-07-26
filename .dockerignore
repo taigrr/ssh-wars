@@ -1,4 +1,6 @@
-.dockerignore
-Dockerfile
+.git
+.github
+.ssh
 ssh-wars
-.ssh/
+tmp/
+*.test
