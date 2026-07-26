@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 func TestParseFrames(t *testing.T) {
@@ -24,9 +24,8 @@ func TestParseFrames(t *testing.T) {
 }
 
 func TestFrameRender(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	yellow := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500"))
-	blue := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6"))
+	yellow := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500"))
+	blue := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6"))
 
 	f := Frame{
 		lines:      []string{"Hello, World!"},
@@ -43,8 +42,7 @@ func TestFrameRender(t *testing.T) {
 }
 
 func TestNewModel(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
+	m := New()
 	if m.currentFrame != 0 {
 		t.Errorf("expected initial frame 0, got %d", m.currentFrame)
 	}
@@ -54,13 +52,12 @@ func TestNewModel(t *testing.T) {
 }
 
 func TestNewDefaultModel(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := NewDefaultModel(renderer)
+	m := NewDefaultModel()
 	if m.Speed != 15 {
 		t.Errorf("expected default speed 15, got %d", m.Speed)
 	}
-	if m.Help.help.Width != 0 {
-		t.Errorf("expected initial help width 0, got %d", m.Help.help.Width)
+	if m.Help.help.Width() != 0 {
+		t.Errorf("expected initial help width 0, got %d", m.Help.help.Width())
 	}
 	if m.Progress.MaxWidth != 65 {
 		t.Errorf("expected default progress width 65, got %d", m.Progress.MaxWidth)
@@ -68,17 +65,15 @@ func TestNewDefaultModel(t *testing.T) {
 }
 
 func TestModelUpdate_Quit(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-
-	tests := []tea.KeyMsg{
-		{Type: tea.KeyRunes, Runes: []rune{'q'}},
-		{Type: tea.KeyEsc},
-		{Type: tea.KeyCtrlC},
+	tests := []tea.KeyPressMsg{
+		{Code: 'q', Text: "q"},
+		{Code: tea.KeyEsc},
+		{Code: 'c', Mod: tea.ModCtrl},
 	}
 
 	for _, msg := range tests {
-		m := New(renderer)
-		m.Help = NewHelpModel(renderer)
+		m := New()
+		m.Help = NewHelpModel()
 
 		updated, cmd := m.Update(msg)
 		if updated == nil {
@@ -91,20 +86,19 @@ func TestModelUpdate_Quit(t *testing.T) {
 }
 
 func TestModelUpdate_SpeedControls(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
-	m.Help = NewHelpModel(renderer)
+	m := New()
+	m.Help = NewHelpModel()
 	m.Speed = 5
 
 	// Speed up
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
 	um := updated.(Model)
 	if um.Speed != 6 {
 		t.Errorf("expected speed 6 after up, got %d", um.Speed)
 	}
 
 	// Speed down
-	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	updated, _ = um.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
 	um = updated.(Model)
 	if um.Speed != 5 {
 		t.Errorf("expected speed 5 after down, got %d", um.Speed)
@@ -112,7 +106,7 @@ func TestModelUpdate_SpeedControls(t *testing.T) {
 
 	// Speed floor
 	um.Speed = 1
-	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	updated, _ = um.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
 	um = updated.(Model)
 	if um.Speed != 1 {
 		t.Errorf("expected speed to stay at 1, got %d", um.Speed)
@@ -120,40 +114,39 @@ func TestModelUpdate_SpeedControls(t *testing.T) {
 }
 
 func TestModelUpdate_Navigation(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
-	m.Help = NewHelpModel(renderer)
+	m := New()
+	m.Help = NewHelpModel()
 
 	// Forward
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
 	um := updated.(Model)
 	if um.currentFrame != 1 {
 		t.Errorf("expected frame 1 after right, got %d", um.currentFrame)
 	}
 
 	// Back
-	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	updated, _ = um.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
 	um = updated.(Model)
 	if um.currentFrame != 0 {
 		t.Errorf("expected frame 0 after left, got %d", um.currentFrame)
 	}
 
 	// Can't go below 0
-	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	updated, _ = um.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
 	um = updated.(Model)
 	if um.currentFrame != 0 {
 		t.Errorf("expected frame to stay at 0, got %d", um.currentFrame)
 	}
 
 	// Jump to end
-	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	updated, _ = um.Update(tea.KeyPressMsg{Code: 'G', Text: "G"})
 	um = updated.(Model)
 	if um.currentFrame != len(frameSet)-1 {
 		t.Errorf("expected last frame, got %d", um.currentFrame)
 	}
 
 	// Jump to start
-	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+	updated, _ = um.Update(tea.KeyPressMsg{Code: 'g', Text: "g"})
 	um = updated.(Model)
 	if um.currentFrame != 0 {
 		t.Errorf("expected frame 0 after g, got %d", um.currentFrame)
@@ -161,12 +154,11 @@ func TestModelUpdate_Navigation(t *testing.T) {
 }
 
 func TestModelUpdate_NumberJump(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
-	m.Help = NewHelpModel(renderer)
+	m := New()
+	m.Help = NewHelpModel()
 
 	// Jump to 50%
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'5'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
 	um := updated.(Model)
 	expected := (len(frameSet) - 1) * 5 / 10
 	if um.currentFrame != expected {
@@ -175,12 +167,11 @@ func TestModelUpdate_NumberJump(t *testing.T) {
 }
 
 func TestModelUpdate_Pause(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
-	m.Help = NewHelpModel(renderer)
+	m := New()
+	m.Help = NewHelpModel()
 	m.Speed = 15
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeySpace})
 	um := updated.(Model)
 	if !um.paused {
 		t.Error("expected model to be paused after space")
@@ -189,7 +180,7 @@ func TestModelUpdate_Pause(t *testing.T) {
 		t.Fatal("expected pausing playback to stop scheduling ticks")
 	}
 
-	updated, cmd = um.Update(tea.KeyMsg{Type: tea.KeySpace})
+	updated, cmd = um.Update(tea.KeyPressMsg{Code: tea.KeySpace})
 	um = updated.(Model)
 	if um.paused {
 		t.Error("expected model to be unpaused after second space")
@@ -200,9 +191,8 @@ func TestModelUpdate_Pause(t *testing.T) {
 }
 
 func TestModelUpdate_WindowTooSmall(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
-	m.Help = NewHelpModel(renderer)
+	m := New()
+	m.Help = NewHelpModel()
 
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 50, Height: 10})
 	um := updated.(Model)
@@ -214,14 +204,13 @@ func TestModelUpdate_WindowTooSmall(t *testing.T) {
 	}
 
 	view := um.View()
-	if !strings.Contains(view, "too small") {
+	if !strings.Contains(view.Content, "too small") {
 		t.Error("expected 'too small' message in view")
 	}
 }
 
 func TestModelUpdate_WindowResizeRecoversFromTooSmall(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := NewDefaultModel(renderer)
+	m := NewDefaultModel()
 	m.paused = true
 	m.tooSmall = true
 
@@ -239,12 +228,11 @@ func TestModelUpdate_WindowResizeRecoversFromTooSmall(t *testing.T) {
 }
 
 func TestModelView(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	m := New(renderer)
-	m.Help = NewHelpModel(renderer)
+	m := New()
+	m.Help = NewHelpModel()
 
 	view := m.View()
-	if len(view) == 0 {
+	if len(view.Content) == 0 {
 		t.Error("View returned empty string")
 	}
 }
@@ -275,8 +263,7 @@ func TestProgressPercent(t *testing.T) {
 }
 
 func TestModelUpdate_AdvancesFrameOnTick(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	model := NewDefaultModel(renderer)
+	model := NewDefaultModel()
 	model.Speed = 15
 
 	updated, cmd := model.Update(TickMsg{})
@@ -293,8 +280,7 @@ func TestModelUpdate_AdvancesFrameOnTick(t *testing.T) {
 }
 
 func TestModelUpdate_SetsCompleteProgressOnLastFrame(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	model := NewDefaultModel(renderer)
+	model := NewDefaultModel()
 	model.currentFrame = len(frameSet) - 1
 	model.paused = true
 
@@ -306,8 +292,7 @@ func TestModelUpdate_SetsCompleteProgressOnLastFrame(t *testing.T) {
 }
 
 func TestModelUpdate_PausesAtLastFrameAfterTick(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	model := NewDefaultModel(renderer)
+	model := NewDefaultModel()
 	model.currentFrame = len(frameSet) - 1
 	model.paused = false
 

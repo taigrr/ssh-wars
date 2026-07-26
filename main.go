@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/fang"
 	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
-	"github.com/charmbracelet/wish/activeterm"
-	bm "github.com/charmbracelet/wish/bubbletea"
-	lm "github.com/charmbracelet/wish/logging"
+	"charm.land/wish/v2"
+	"charm.land/wish/v2/activeterm"
+	bm "charm.land/wish/v2/bubbletea"
+	lm "charm.land/wish/v2/logging"
 	"github.com/spf13/cobra"
 	"github.com/taigrr/ssh-wars/asciimation"
 )
@@ -80,8 +80,8 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		return nil, nil
 	}
 
-	renderer := bm.MakeRenderer(s)
-	model := asciimation.NewDefaultModel(renderer)
+	model := asciimation.NewDefaultModel()
+	model.AltScreen = true
 
-	return model, []tea.ProgramOption{tea.WithAltScreen()}
+	return model, nil
 }

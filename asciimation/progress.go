@@ -3,8 +3,8 @@ package asciimation
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/progress"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/progress"
+	tea "charm.land/bubbletea/v2"
 )
 
 type ModelProg struct {
@@ -18,16 +18,17 @@ func (ModelProg) Init() tea.Cmd {
 	return nil
 }
 
-func (m ModelProg) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m ModelProg) Update(msg tea.Msg) (ModelProg, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.Progress.Width = msg.Width - m.Padding*2 - 4
-		if m.Progress.Width < 0 {
-			m.Progress.Width = 0
+		w := msg.Width - m.Padding*2 - 4
+		if w < 0 {
+			w = 0
 		}
-		if m.Progress.Width > m.MaxWidth {
-			m.Progress.Width = m.MaxWidth
+		if w > m.MaxWidth {
+			w = m.MaxWidth
 		}
+		m.Progress.SetWidth(w)
 		return m, nil
 	default:
 		return m, nil

@@ -3,38 +3,32 @@ package asciimation
 import (
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
 )
 
 func TestNewHelpModel(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	h := NewHelpModel(renderer)
+	h := NewHelpModel()
 	if h.help.ShowAll {
 		t.Error("expected help to start collapsed")
 	}
 }
 
 func TestHelpModel_ToggleHelp(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	h := NewHelpModel(renderer)
+	h := NewHelpModel()
 
-	updated, _ := h.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
-	um := updated.(HelpModel)
+	um, _ := h.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
 	if !um.help.ShowAll {
 		t.Error("expected help to be expanded after ?")
 	}
 
-	updated, _ = um.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
-	um = updated.(HelpModel)
+	um, _ = um.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
 	if um.help.ShowAll {
 		t.Error("expected help to be collapsed after second ?")
 	}
 }
 
 func TestHelpModel_View(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	h := NewHelpModel(renderer)
+	h := NewHelpModel()
 	view := h.View()
 	if len(view) == 0 {
 		t.Error("HelpModel View returned empty string")
@@ -42,13 +36,11 @@ func TestHelpModel_View(t *testing.T) {
 }
 
 func TestHelpModel_WindowResize(t *testing.T) {
-	renderer := lipgloss.DefaultRenderer()
-	h := NewHelpModel(renderer)
+	h := NewHelpModel()
 
-	updated, _ := h.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
-	um := updated.(HelpModel)
-	if um.help.Width != 120 {
-		t.Errorf("expected help width 120, got %d", um.help.Width)
+	um, _ := h.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	if um.help.Width() != 120 {
+		t.Errorf("expected help width 120, got %d", um.help.Width())
 	}
 }
 

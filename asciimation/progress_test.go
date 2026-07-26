@@ -4,8 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/progress"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/progress"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 func TestModelProg_Init(t *testing.T) {
@@ -17,37 +18,34 @@ func TestModelProg_Init(t *testing.T) {
 
 func TestModelProg_Update_WindowResize(t *testing.T) {
 	m := ModelProg{
-		Progress: progress.New(progress.WithSolidFill("#174ea6")),
+		Progress: progress.New(progress.WithColors(lipgloss.Color("#174ea6"))),
 		MaxWidth: 65,
 		Padding:  2,
 	}
 
 	// Small window: width should be calculated as Width - Padding*2 - 4
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 50, Height: 40})
-	um := updated.(ModelProg)
+	um, _ := m.Update(tea.WindowSizeMsg{Width: 50, Height: 40})
 	expected := 50 - 2*2 - 4
-	if um.Progress.Width != expected {
-		t.Errorf("expected width %d, got %d", expected, um.Progress.Width)
+	if um.Progress.Width() != expected {
+		t.Errorf("expected width %d, got %d", expected, um.Progress.Width())
 	}
 
 	// Very small window: width should never go negative.
-	updated, _ = m.Update(tea.WindowSizeMsg{Width: 6, Height: 40})
-	um = updated.(ModelProg)
-	if um.Progress.Width != 0 {
-		t.Errorf("expected width clamped at 0, got %d", um.Progress.Width)
+	um, _ = m.Update(tea.WindowSizeMsg{Width: 6, Height: 40})
+	if um.Progress.Width() != 0 {
+		t.Errorf("expected width clamped at 0, got %d", um.Progress.Width())
 	}
 
 	// Large window: width should be capped at MaxWidth
-	updated, _ = m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
-	um = updated.(ModelProg)
-	if um.Progress.Width != 65 {
-		t.Errorf("expected width capped at 65, got %d", um.Progress.Width)
+	um, _ = m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
+	if um.Progress.Width() != 65 {
+		t.Errorf("expected width capped at 65, got %d", um.Progress.Width())
 	}
 }
 
 func TestModelProg_View(t *testing.T) {
 	m := ModelProg{
-		Progress: progress.New(progress.WithSolidFill("#174ea6")),
+		Progress: progress.New(progress.WithColors(lipgloss.Color("#174ea6"))),
 		MaxWidth: 65,
 		Padding:  2,
 		percent:  0.5,

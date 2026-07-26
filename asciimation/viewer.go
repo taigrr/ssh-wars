@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 //go:embed intro.ascii
@@ -32,6 +32,7 @@ type Model struct {
 	Progress     ModelProg
 	Help         HelpModel
 	Speed        int
+	AltScreen    bool
 	yellow       lipgloss.Style
 	blue         lipgloss.Style
 	currentFrame int
@@ -45,10 +46,10 @@ type Frame struct {
 	index      int
 }
 
-func New(renderer *lipgloss.Renderer) Model {
+func New() Model {
 	m := Model{
-		yellow: renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500")),
-		blue:   renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6")),
+		yellow: lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ffc500")),
+		blue:   lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#174ea6")),
 	}
 	onceFrames.Do(func() {
 		frameSet = parseFrames()
@@ -113,11 +114,16 @@ func parseFrames() []Frame {
 	return frames
 }
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
+	var content string
 	if m.tooSmall {
-		return "Window is too small for player.\nPlease try resizing your window."
+		content = "Window is too small for player.\nPlease try resizing your window."
+	} else {
+		content = frameSet[m.currentFrame].Render(m.yellow, m.blue) + "\n" + m.Progress.View() + m.Help.View() + "\n"
 	}
-	return frameSet[m.currentFrame].Render(m.yellow, m.blue) + "\n" + m.Progress.View() + m.Help.View() + "\n"
+	v := tea.NewView(content)
+	v.AltScreen = m.AltScreen
+	return v
 }
 
 func (m Model) Init() tea.Cmd {
@@ -153,10 +159,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.tooSmall = false
 			cmd = m.tick()
 		}
-		h, _ := m.Help.Update(msg)
-		t, _ := h.(HelpModel)
-		m.Help = t
-	case tea.KeyMsg:
+		m.Help, _ = m.Help.Update(msg)
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc", "q":
 			return m, tea.Quit
@@ -182,22 +186,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			num, _ := strconv.Atoi(msg.String())
 			m.currentFrame = len(frameSet) - 1
 			m.currentFrame = m.currentFrame * num / 10
-		case " ":
+		case "space":
 			m.paused = !m.paused
 			if !m.paused {
 				return m, m.tick()
 			}
 			return m, nil
 		default:
-			h, _ := m.Help.Update(msg)
-			t, _ := h.(HelpModel)
-			m.Help = t
+			m.Help, _ = m.Help.Update(msg)
 		}
 	}
 	m.Progress.percent = progressPercent(m.currentFrame, len(frameSet))
-	p, _ := m.Progress.Update(msg)
-	t, _ := p.(ModelProg)
-	m.Progress = t
+	m.Progress, _ = m.Progress.Update(msg)
 
 	return m, cmd
 }

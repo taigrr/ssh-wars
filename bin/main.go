@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
 	"github.com/taigrr/ssh-wars/asciimation"
 )
 
 func main() {
-	renderer := lipgloss.DefaultRenderer()
-	model := asciimation.NewDefaultModel(renderer)
+	model := asciimation.NewDefaultModel()
 
 	program := tea.NewProgram(model)
 	if _, err := program.Run(); err != nil {

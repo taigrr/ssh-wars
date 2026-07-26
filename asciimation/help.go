@@ -1,10 +1,10 @@
 package asciimation
 
 import (
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 type keyMap struct {
@@ -61,7 +61,7 @@ var keys = keyMap{
 		key.WithHelp("0-9", "jump to position"),
 	),
 	Space: key.NewBinding(
-		key.WithKeys(" "),
+		key.WithKeys("space"),
 		key.WithHelp("space", "play/pause"),
 	),
 	G: key.NewBinding(
@@ -81,12 +81,12 @@ type HelpModel struct {
 	keyStyle         lipgloss.Style
 }
 
-func NewHelpModel(renderer *lipgloss.Renderer) HelpModel {
+func NewHelpModel() HelpModel {
 	h := HelpModel{
 		keys:             keys,
 		help:             help.New(),
-		descriptionStyle: renderer.NewStyle().Foreground(lipgloss.Color("#DC3E58")),
-		keyStyle:         renderer.NewStyle().Foreground(lipgloss.Color("#ffc500")),
+		descriptionStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#DC3E58")),
+		keyStyle:         lipgloss.NewStyle().Foreground(lipgloss.Color("#ffc500")),
 	}
 	h.help.Styles.ShortKey = h.keyStyle
 	h.help.Styles.FullKey = h.keyStyle
@@ -99,11 +99,11 @@ func (m HelpModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m HelpModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m HelpModel) Update(msg tea.Msg) (HelpModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.help.Width = msg.Width
-	case tea.KeyMsg:
+		m.help.SetWidth(msg.Width)
+	case tea.KeyPressMsg:
 		if key.Matches(msg, m.keys.Help) {
 			m.help.ShowAll = !m.help.ShowAll
 		}
