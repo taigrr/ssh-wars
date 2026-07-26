@@ -184,7 +184,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentFrame = m.currentFrame * num / 10
 		case " ":
 			m.paused = !m.paused
-			return m, m.tick()
+			if !m.paused {
+				return m, m.tick()
+			}
+			return m, nil
 		default:
 			h, _ := m.Help.Update(msg)
 			t, _ := h.(HelpModel)
