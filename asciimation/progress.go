@@ -14,20 +14,11 @@ type ModelProg struct {
 	Progress progress.Model
 }
 
-func (ModelProg) Init() tea.Cmd {
-	return nil
-}
-
 func (m ModelProg) Update(msg tea.Msg) (ModelProg, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		w := msg.Width - m.Padding*2 - 4
-		if w < 0 {
-			w = 0
-		}
-		if w > m.MaxWidth {
-			w = m.MaxWidth
-		}
+		w := max(0, msg.Width-m.Padding*2-4)
+		w = min(w, m.MaxWidth)
 		m.Progress.SetWidth(w)
 		return m, nil
 	default:

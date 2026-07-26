@@ -11,12 +11,12 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/fang"
-	"github.com/charmbracelet/ssh"
 	"charm.land/wish/v2"
 	"charm.land/wish/v2/activeterm"
 	bm "charm.land/wish/v2/bubbletea"
 	lm "charm.land/wish/v2/logging"
+	"github.com/charmbracelet/fang"
+	"github.com/charmbracelet/ssh"
 	"github.com/spf13/cobra"
 	"github.com/taigrr/ssh-wars/asciimation"
 )
@@ -73,13 +73,7 @@ func main() {
 	}
 }
 
-func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	_, _, active := s.Pty()
-	if !active {
-		fmt.Println("no active terminal, skipping")
-		return nil, nil
-	}
-
+func teaHandler(_ ssh.Session) (tea.Model, []tea.ProgramOption) {
 	model := asciimation.NewDefaultModel()
 	model.AltScreen = true
 

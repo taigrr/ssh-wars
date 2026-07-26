@@ -9,13 +9,6 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-func TestModelProg_Init(t *testing.T) {
-	m := ModelProg{}
-	if cmd := m.Init(); cmd != nil {
-		t.Error("expected Init to return nil")
-	}
-}
-
 func TestModelProg_Update_WindowResize(t *testing.T) {
 	m := ModelProg{
 		Progress: progress.New(progress.WithColors(lipgloss.Color("#174ea6"))),

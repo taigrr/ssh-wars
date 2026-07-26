@@ -16,8 +16,8 @@ type keyMap struct {
 	Quit    key.Binding
 	Numbers key.Binding
 	Space   key.Binding
-	G      key.Binding
-	GSmall key.Binding
+	G       key.Binding
+	GSmall  key.Binding
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
@@ -93,10 +93,6 @@ func NewHelpModel() HelpModel {
 	h.help.Styles.FullDesc = h.descriptionStyle
 	h.help.Styles.ShortDesc = h.descriptionStyle
 	return h
-}
-
-func (m HelpModel) Init() tea.Cmd {
-	return nil
 }
 
 func (m HelpModel) Update(msg tea.Msg) (HelpModel, tea.Cmd) {

@@ -26,6 +26,16 @@ const longAgoFrame = 49
 const scrawlStart = 51
 const scrawlEnd = 111
 
+// Frame geometry: each rendered line is "||" + 67 content columns + "||".
+const (
+	frameContentWidth = 67
+	frameBorderWidth  = 71
+	frameLineWidth    = 72 // border width plus trailing newline
+
+	minWindowWidth  = 72
+	minWindowHeight = 22
+)
+
 type TickMsg struct{}
 
 type Model struct {
@@ -58,15 +68,11 @@ func New() Model {
 }
 
 func (f Frame) Render(yellow, blue lipgloss.Style) string {
-	var border strings.Builder
-	for i := 0; i < 71; i++ {
-		border.WriteString("=")
-	}
-	localBorder := yellow.Render(border.String())
+	localBorder := yellow.Render(strings.Repeat("=", frameBorderWidth))
 	edge := yellow.Render("||")
 
 	var sb strings.Builder
-	sb.Grow((len(f.lines) + 2) * 72)
+	sb.Grow((len(f.lines) + 2) * frameLineWidth)
 	sb.WriteString(localBorder)
 	sb.WriteString("\n")
 	for _, l := range f.lines {
@@ -78,10 +84,9 @@ func (f Frame) Render(yellow, blue lipgloss.Style) string {
 			l = yellow.Render(l)
 		}
 		sb.WriteString(l)
-		for i := length; i < 67; i++ {
-			sb.WriteString(" ")
-		}
-		sb.WriteString(edge + "\n")
+		sb.WriteString(strings.Repeat(" ", max(0, frameContentWidth-length)))
+		sb.WriteString(edge)
+		sb.WriteString("\n")
 	}
 	sb.WriteString(localBorder)
 	return sb.String()
@@ -97,9 +102,7 @@ func parseFrames() []Frame {
 	for i, l := range lines {
 		if i%(viewportY+1) == 0 {
 			f = Frame{index: i / (viewportY + 1)}
-			countStr := l
-			c, _ := strconv.Atoi(countStr)
-			f.frameCount = c
+			f.frameCount, _ = strconv.Atoi(l)
 			continue
 		}
 		u, err := strconv.Unquote("\"" + l + "\"")
@@ -138,7 +141,6 @@ func (m Model) tick() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	cmd = nil
 	switch msg := msg.(type) {
 	case TickMsg:
 		if m.paused {
@@ -151,7 +153,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.paused = true
 		}
 	case tea.WindowSizeMsg:
-		if msg.Width < 72 || msg.Height < 22 {
+		if msg.Width < minWindowWidth || msg.Height < minWindowHeight {
 			m.paused = true
 			m.tooSmall = true
 		} else if m.tooSmall {
@@ -184,8 +186,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentFrame = 0
 		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
 			num, _ := strconv.Atoi(msg.String())
-			m.currentFrame = len(frameSet) - 1
-			m.currentFrame = m.currentFrame * num / 10
+			m.currentFrame = (len(frameSet) - 1) * num / 10
 		case "space":
 			m.paused = !m.paused
 			if !m.paused {
