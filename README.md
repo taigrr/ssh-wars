@@ -35,6 +35,7 @@ docker run -p 2222:2222 ssh-wars
 | `↑` / `k` | Increase speed |
 | `↓` / `j` | Decrease speed |
 | `0`–`9` | Jump to position (0% – 90%) |
+| `g` | Jump to start |
 | `G` | Jump to end |
 | `?` | Toggle help |
 | `q` / `Ctrl+C` | Quit |
@@ -42,8 +43,9 @@ docker run -p 2222:2222 ssh-wars
 ## Server Flags
 
 ```
--host string   Host to listen on (default "0.0.0.0")
--port int      Port to listen on (default 2222)
+--host string            Host to listen on (default "0.0.0.0")
+--host-key-path string   SSH host key path (default ".ssh/term_info_ed25519")
+--port int               Port to listen on (default 2222)
 ```
 
 ## License

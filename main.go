@@ -21,56 +21,80 @@ import (
 	"github.com/taigrr/ssh-wars/asciimation"
 )
 
-func main() {
-	var host string
-	var port int
+const (
+	defaultHost        = "0.0.0.0"
+	defaultPort        = 2222
+	defaultHostKeyPath = ".ssh/term_info_ed25519"
+	shutdownTimeout    = 30 * time.Second
+)
 
+type serverConfig struct {
+	host        string
+	port        int
+	hostKeyPath string
+}
+
+func main() {
+	if err := fang.Execute(context.Background(), newRootCommand()); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func newRootCommand() *cobra.Command {
+	config := serverConfig{
+		host:        defaultHost,
+		port:        defaultPort,
+		hostKeyPath: defaultHostKeyPath,
+	}
 	command := &cobra.Command{
 		Use:   "ssh-wars",
 		Short: "Serve the Star Wars ASCII animation over SSH",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			server, err := wish.NewServer(
-				wish.WithAddress(fmt.Sprintf("%s:%d", host, port)),
-				wish.WithHostKeyPath(".ssh/term_info_ed25519"),
-				wish.WithMiddleware(
-					bm.Middleware(teaHandler),
-					activeterm.Middleware(),
-					lm.Middleware(),
-				),
-			)
-			if err != nil {
-				return err
-			}
-
-			done := make(chan os.Signal, 1)
-			signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-			defer signal.Stop(done)
-
-			log.Printf("Starting SSH server on %s:%d", host, port)
-			go func() {
-				if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, ssh.ErrServerClosed) {
-					log.Printf("server error: %v", serveErr)
-					done <- syscall.SIGTERM
-				}
-			}()
-
-			<-done
-			log.Println("Stopping SSH server")
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			if shutdownErr := server.Shutdown(ctx); shutdownErr != nil && !errors.Is(shutdownErr, ssh.ErrServerClosed) {
-				return shutdownErr
-			}
-			return nil
+			return runServer(config)
 		},
 	}
 
-	command.Flags().StringVar(&host, "host", "0.0.0.0", "Host to listen on")
-	command.Flags().IntVar(&port, "port", 2222, "Port to listen on")
+	command.Flags().StringVar(&config.host, "host", defaultHost, "Host to listen on")
+	command.Flags().IntVar(&config.port, "port", defaultPort, "Port to listen on")
+	command.Flags().StringVar(&config.hostKeyPath, "host-key-path", defaultHostKeyPath, "SSH host key path")
 
-	if err := fang.Execute(context.Background(), command); err != nil {
-		log.Fatalln(err)
+	return command
+}
+
+func runServer(config serverConfig) error {
+	server, err := wish.NewServer(
+		wish.WithAddress(fmt.Sprintf("%s:%d", config.host, config.port)),
+		wish.WithHostKeyPath(config.hostKeyPath),
+		wish.WithMiddleware(
+			bm.Middleware(teaHandler),
+			activeterm.Middleware(),
+			lm.Middleware(),
+		),
+	)
+	if err != nil {
+		return err
 	}
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(done)
+
+	log.Printf("Starting SSH server on %s:%d", config.host, config.port)
+	go func() {
+		if serveErr := server.ListenAndServe(); serveErr != nil && !errors.Is(serveErr, ssh.ErrServerClosed) {
+			log.Printf("server error: %v", serveErr)
+			done <- syscall.SIGTERM
+		}
+	}()
+
+	<-done
+	log.Println("Stopping SSH server")
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+	if shutdownErr := server.Shutdown(ctx); shutdownErr != nil && !errors.Is(shutdownErr, ssh.ErrServerClosed) {
+		return shutdownErr
+	}
+	return nil
 }
 
 func teaHandler(_ ssh.Session) (tea.Model, []tea.ProgramOption) {
