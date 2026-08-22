@@ -7,16 +7,17 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/ssh"
 	"charm.land/wish/v2"
 	"charm.land/wish/v2/activeterm"
 	bm "charm.land/wish/v2/bubbletea"
 	lm "charm.land/wish/v2/logging"
 	"github.com/charmbracelet/fang"
-	"github.com/charmbracelet/ssh"
 	"github.com/spf13/cobra"
 	"github.com/taigrr/ssh-wars/asciimation"
 )
@@ -27,6 +28,25 @@ const (
 	defaultHostKeyPath = ".ssh/term_info_ed25519"
 	shutdownTimeout    = 30 * time.Second
 )
+
+var (
+	Version = "devel"
+	Commit  = ""
+)
+
+func versionString() string {
+	if Version == "devel" {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			if v := info.Main.Version; v != "" && v != "(devel)" {
+				Version = v
+			}
+		}
+	}
+	if Commit != "" {
+		return fmt.Sprintf("%s (%s)", Version, Commit)
+	}
+	return Version
+}
 
 type serverConfig struct {
 	host        string
@@ -47,8 +67,9 @@ func newRootCommand() *cobra.Command {
 		hostKeyPath: defaultHostKeyPath,
 	}
 	command := &cobra.Command{
-		Use:   "ssh-wars",
-		Short: "Serve the Star Wars ASCII animation over SSH",
+		Use:     "ssh-wars",
+		Short:   "Serve the Star Wars ASCII animation over SSH",
+		Version: versionString(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runServer(config)
 		},
