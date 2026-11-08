@@ -96,9 +96,9 @@ func parseFrames() []Frame {
 	var frames []Frame
 	f := Frame{index: 0}
 	lines := strings.Split(introString, "\n")
-	asciiString = strings.ReplaceAll(asciiString, "\\'", "'")
-	asciiString = strings.ReplaceAll(asciiString, "\"", "\\\"")
-	lines = append(lines, strings.Split(asciiString, "\\n")...)
+	ascii := strings.ReplaceAll(asciiString, "\\'", "'")
+	ascii = strings.ReplaceAll(ascii, "\"", "\\\"")
+	lines = append(lines, strings.Split(ascii, "\\n")...)
 	for i, l := range lines {
 		if i%(viewportY+1) == 0 {
 			f = Frame{index: i / (viewportY + 1)}
