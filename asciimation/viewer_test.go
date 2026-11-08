@@ -1,6 +1,7 @@
 package asciimation
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -303,5 +304,18 @@ func TestModelUpdate_PausesAtLastFrameAfterTick(t *testing.T) {
 	}
 	if cmd != nil {
 		t.Fatal("expected final tick to stop scheduling more frames")
+	}
+}
+
+func TestParseFramesRepeatable(t *testing.T) {
+	original := asciiString
+	defer func() { asciiString = original }()
+	first := parseFrames()
+	second := parseFrames()
+	if !reflect.DeepEqual(first, second) {
+		t.Error("repeated parsing changed animation frames")
+	}
+	if asciiString != original {
+		t.Error("parsing mutated the embedded animation source")
 	}
 }
